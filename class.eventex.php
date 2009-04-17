@@ -195,6 +195,8 @@ class GenericSectionUpdater
 		$oSectionUpdater->storeRedirect();
 		
 		$sm = new SectionManager($oParent);	
+		
+		$redirect = true;
 	
 		foreach ($aSectionArray as $entry)
 		{
@@ -219,7 +221,12 @@ class GenericSectionUpdater
 			$section_arrays = $oSectionUpdater->updateSections($sm->fetchIDFromHandle($entry), $entry, $field_array);
 			
 			foreach($section_arrays as $section)
-				$compiled_result->appendChild($section);	
+			{				
+				$compiled_result->appendChild($section);
+				
+				if ($section->getAttribute("result") == "error")
+					$redirect = false;
+			}	
 		}
 		
 		// Fix up the SBLs
@@ -229,7 +236,7 @@ class GenericSectionUpdater
 		$oSectionUpdater->rollbackTransaction();
 		
 		// redirect if set up
-		$oSectionUpdater->actionRedirect();
+		if ($redirect )$oSectionUpdater->actionRedirect();
 		
 		return $compiled_result;
 	}
