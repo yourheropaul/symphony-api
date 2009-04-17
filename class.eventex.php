@@ -244,6 +244,9 @@ Class GenericSectionUpdate extends Event
 	private $updated_entries = array();
 	private $updated_counts  = array();
 	
+	// A record of created (deleteable) entries
+	private $created_entries = array();
+	
 	// Second pass associations
 	private $unresolved_links = array();
 	
@@ -334,9 +337,16 @@ Class GenericSectionUpdate extends Event
 		// And _FILES data
 		$files_backup = $_FILES['fields'];
 		
+		// Make sure only newly created entries are deleteable
+		$is_deletable = true;
+		
 		// Entry ID, is present
 		if ($aEntry["system:id"])
-			$_POST["id"] = $aEntry["system:id"]; 
+		{
+			$_POST["id"] = $aEntry["system:id"];
+			
+			$is_deletable = false;
+		} 
 		
 		// Spoof post and file fields
 		$_POST['fields'] = $aEntry;
@@ -442,6 +452,10 @@ Class GenericSectionUpdate extends Event
 		$this->updated_entries[$szPostKey][] = $result->getAttribute("id");
 		$this->updated_counts[$szPostKey]++;
 		
+		// Deleteables list
+		if ($is_deletable)
+			$this->created_entries[] = $result->getAttribute("id");
+		
 		// maintain the unresolved links list
 		foreach ($local_unresolved_links as $link)
 		{
@@ -460,9 +474,8 @@ Class GenericSectionUpdate extends Event
 	{
 		// Don't delete if there are no errors
 		if (!$this->rollback) return;		
-		
-		foreach ($this->updated_entries as $section)	
-			DatabaseManipulator::deleteEntries($section);
+			
+		DatabaseManipulator::deleteEntries($this->created_entries);
 	} 
 	
 	public function resolveLinks()
